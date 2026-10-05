@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #F7F5F0;
+  --card: #FFFFFF;
+  --border: #E4E0D6;
+  --text: #221D17;
+  --text2: #78715F;
+  --primary: #1D4ED8;
+  --primary-dark: #16309C;
+  --success: #15803D;
+  --success-bg: #E7F4EB;
+  --warning: #B45309;
+  --warning-bg: #FDF1E3;
+  --danger: #B91C1C;
+  --danger-bg: #FBEAEA;
+}
+
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
