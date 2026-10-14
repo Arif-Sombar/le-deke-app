@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { hitungJarakMeter } from '@/lib/distance';
 import { getSesi } from '@/lib/session';
+import { tanggalWita } from '@/lib/waktu';
 
 const STORE_LAT = Number(process.env.STORE_LAT ?? 0);
 const STORE_LNG = Number(process.env.STORE_LNG ?? 0);
@@ -105,7 +106,7 @@ export async function checkinAction(
   const statusLokasi = jarak <= STORE_RADIUS_METER ? 'sesuai' : 'di_luar_radius';
 
   const supabase = getSupabaseAdmin();
-  const tanggal = new Date().toISOString().slice(0, 10);
+  const tanggal = tanggalWita();
 
   const ext = foto.type === 'image/png' ? 'png' : 'jpg';
   const path = `${pegawaiId}/${tanggal}.${ext}`;
@@ -142,6 +143,25 @@ export async function checkinAction(
   if (upsertError) {
     return { error: 'Gagal simpan absensi: ' + upsertError.message };
   }
+
+  redirect('/dashboard');
+}
+
+// ========================================
+// PULANG MANUAL
+// (tanpa ini, pegawai dianggap hadir sampai jam 17:00)
+// ========================================
+export async function pulangAction() {
+  const sesi = await getSesi();
+  if (!sesi) redirect('/login');
+
+  const supabase = getSupabaseAdmin();
+  await supabase
+    .from('absensi')
+    .update({ waktu_checkout: new Date().toISOString(), checkout_manual: true })
+    .eq('pegawai_id', sesi.id)
+    .eq('tanggal', tanggalWita())
+    .is('waktu_checkout', null);
 
   redirect('/dashboard');
 }

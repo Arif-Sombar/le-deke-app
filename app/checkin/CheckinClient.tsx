@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from 'react';
 import { checkinAction } from '@/app/actions';
+import { kompresFoto, pasangFile } from '@/lib/kompres';
 
 export default function CheckinPage() {
   const [state, formAction, pending] = useActionState(checkinAction, null);
@@ -23,10 +24,13 @@ export default function CheckinPage() {
     );
   }, []);
 
-  function handleFotoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  async function handleFotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const input = e.target;
+    const file = input.files?.[0];
     if (file) {
-      setFotoPreview(URL.createObjectURL(file));
+      const kecil = await kompresFoto(file);
+      pasangFile(input, kecil);
+      setFotoPreview(URL.createObjectURL(kecil));
     }
   }
 
