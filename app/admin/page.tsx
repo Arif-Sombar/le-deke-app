@@ -33,7 +33,7 @@ export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
   const { awal, akhir } = rentangHariWita(tanggal);
 
   const supabase = getSupabaseAdmin();
-  const [{ data: semuaPegawai }, { data: absensi }, { data: transaksi }] = await Promise.all([
+  const [{ data: semuaPegawai }, { data: absensi }, { data: transaksi }, { data: belanja }, { data: saldoKasTotal }] = await Promise.all([
     supabase.from('pegawai').select('id, nama, status').eq('peran', 'pegawai').eq('status', 'aktif').order('nama'),
     supabase.from('absensi')
       .select('pegawai_id, waktu_checkin, waktu_checkout, checkout_manual, status_lokasi, foto_stok_kopi')
@@ -42,11 +42,19 @@ export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
       .select('id, plat_nomor, jenis_layanan, harga, bagian_pegawai, bagian_owner, bagian_kas, waktu_masuk, nomor_antrian, foto_url')
       .gte('waktu_masuk', awal).lt('waktu_masuk', akhir)
       .order('waktu_masuk', { ascending: false }),
+    supabase.from('pengeluaran')
+      .select('id, kategori, nominal, keterangan, foto_struk, created_at, dicatat_oleh')
+      .eq('tanggal', tanggal)
+      .order('created_at', { ascending: false }),
+    supabase.rpc('saldo_kas'),
   ]);
 
   const daftarTrx = transaksi ?? [];
   const daftarAbsen = absensi ?? [];
   const pegawai = semuaPegawai ?? [];
+  const daftarBelanja = belanja ?? [];
+  const namaPegawai = new Map(pegawai.map((p) => [p.id, p.nama]));
+  const totalBelanja = daftarBelanja.reduce((s, b) => s + Number(b.nominal), 0);
 
   const total = daftarTrx.reduce((s, t) => s + Number(t.harga), 0);
   const totalPegawai = daftarTrx.reduce((s, t) => s + Number(t.bagian_pegawai), 0);
@@ -101,9 +109,17 @@ export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
             <div style={{ fontSize: 20, fontWeight: 800 }}>{rupiah(totalPegawai)}</div>
           </div>
           <div style={kartu}>
-            <div style={{ fontSize: 12, color: 'var(--text2)' }}>Kas (20%)</div>
+            <div style={{ fontSize: 12, color: 'var(--text2)' }}>Kas masuk (20%)</div>
             <div style={{ fontSize: 20, fontWeight: 800 }}>{rupiah(totalKas)}</div>
+            <div style={{ fontSize: 12, color: 'var(--text2)' }}>Belanja {rupiah(totalBelanja)}</div>
           </div>
+        </div>
+        <div className="flex items-center justify-between" style={{ ...kartu, background: '#F1F8F3' }}>
+          <div>
+            <div style={{ fontSize: 12, color: 'var(--text2)' }}>Saldo kas total (semua hari)</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--success)' }}>{rupiah(Number(saldoKasTotal ?? 0))}</div>
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text2)', textAlign: 'right' }}>Kas masuk dikurangi semua belanja</div>
         </div>
         {tidakTerbagi > 0.5 && (
           <div style={{ fontSize: 12, color: 'var(--warning)', background: 'var(--warning-bg)', padding: '8px 12px', borderRadius: 8 }}>
@@ -191,8 +207,34 @@ export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
           </div>
         </div>
 
+        <div style={kartu}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>Belanja ({daftarBelanja.length}) · {rupiah(totalBelanja)}</div>
+          <div className="flex flex-col gap-2">
+            {daftarBelanja.map((b) => (
+              <div key={b.id} className="flex items-center gap-3" style={{ padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                {b.foto_struk ? (
+                  <a href={b.foto_struk} target="_blank" rel="noreferrer">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={b.foto_struk} alt="Foto struk/barang" width={44} height={44} style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 8 }} />
+                  </a>
+                ) : (
+                  <div style={{ width: 44, height: 44, borderRadius: 8, background: '#EFEBE0' }} />
+                )}
+                <div className="flex-grow">
+                  <div style={{ fontSize: 14, fontWeight: 700 }}>{b.keterangan}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text2)' }}>
+                    {b.kategori} · {jamWita(b.created_at)}{b.dicatat_oleh && namaPegawai.get(b.dicatat_oleh) ? ` · ${namaPegawai.get(b.dicatat_oleh)}` : ''}
+                  </div>
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>{rupiah(Number(b.nominal))}</div>
+              </div>
+            ))}
+            {daftarBelanja.length === 0 && <div style={{ fontSize: 13, color: 'var(--text2)' }}>Belum ada belanja pada tanggal ini.</div>}
+          </div>
+        </div>
+
         <div style={{ fontSize: 11, color: 'var(--text2)', textAlign: 'center' }}>
-          Upah per pegawai adalah perkiraan sampai closing jam 17:00 (fitur closing, saldo, dan pencairan menyusul).
+          Upah per pegawai adalah perkiraan sampai closing jam 17:00 (fitur closing, saldo, dan pencairan menyusul). Foto dihapus otomatis setelah 60 hari; datanya tetap tersimpan.
         </div>
       </div>
     </div>

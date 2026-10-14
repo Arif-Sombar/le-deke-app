@@ -31,6 +31,13 @@ export default async function DashboardPage() {
     .lt('waktu_masuk', akhir)
     .order('waktu_masuk', { ascending: false });
 
+  const { data: belanja } = await supabase
+    .from('pengeluaran')
+    .select('id, kategori, nominal, keterangan')
+    .eq('tanggal', tanggal)
+    .order('created_at', { ascending: false });
+  const daftarBelanja = belanja ?? [];
+
   const daftar = transaksi ?? [];
   const upah = hitungUpahPerPegawai(tanggal, daftar, absensiHariIni ?? []);
   const upahSaya = upah.get(sesi.id) ?? 0;
@@ -67,6 +74,10 @@ export default async function DashboardPage() {
           </Link>
         )}
 
+        <Link href="/belanja" className="rounded-xl flex items-center justify-center" style={{ height: 48, background: '#fff', border: '1.5px solid var(--primary)', color: 'var(--primary)', fontWeight: 700, fontSize: 15 }}>
+          + Catat Belanja
+        </Link>
+
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Mobil hari ini</div>
           {daftar.length === 0 ? (
@@ -90,6 +101,23 @@ export default async function DashboardPage() {
             </div>
           )}
         </div>
+
+        {daftarBelanja.length > 0 && (
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Belanja hari ini (dari kas)</div>
+            <div className="flex flex-col gap-2">
+              {daftarBelanja.map((b) => (
+                <div key={b.id} className="rounded-xl flex items-center gap-3" style={{ background: '#fff', border: '1px solid var(--border)', padding: '10px 14px' }}>
+                  <div className="flex-grow">
+                    <div style={{ fontSize: 14, fontWeight: 700 }}>{b.keterangan}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text2)' }}>{b.kategori}</div>
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>{rupiah(Number(b.nominal))}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {!sudahPulang && (
           <form action={pulangAction}>
