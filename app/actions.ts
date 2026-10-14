@@ -76,6 +76,22 @@ export async function logoutAction() {
 // CHECK-IN
 // ========================================
 export async function checkinAction(
+  prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  try {
+    return await prosesCheckin(prevState, formData);
+  } catch (e) {
+    // redirect() di Next.js bekerja dengan melempar error khusus; biarkan lewat
+    if (e instanceof Error && 'digest' in e && String((e as { digest?: string }).digest).startsWith('NEXT_REDIRECT')) {
+      throw e;
+    }
+    console.error('checkinAction gagal:', e);
+    return { error: 'Terjadi kesalahan di server: ' + (e instanceof Error ? e.message : String(e)) };
+  }
+}
+
+async function prosesCheckin(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {

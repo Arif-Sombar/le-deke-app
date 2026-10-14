@@ -9,6 +9,21 @@ import { JENIS_LAYANAN, bagiHarga, type JenisLayanan } from '@/lib/harga';
 export type CuciState = { error?: string } | null;
 
 export async function catatCuciAction(
+  prev: CuciState,
+  formData: FormData
+): Promise<CuciState> {
+  try {
+    return await prosesCatatCuci(prev, formData);
+  } catch (e) {
+    if (e instanceof Error && 'digest' in e && String((e as { digest?: string }).digest).startsWith('NEXT_REDIRECT')) {
+      throw e;
+    }
+    console.error('catatCuciAction gagal:', e);
+    return { error: 'Terjadi kesalahan di server: ' + (e instanceof Error ? e.message : String(e)) };
+  }
+}
+
+async function prosesCatatCuci(
   _prev: CuciState,
   formData: FormData
 ): Promise<CuciState> {
