@@ -19,7 +19,8 @@ export async function loginAction(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const username = String(formData.get('username') ?? '').trim();
+  // Huruf besar/kecil tidak dibedakan: semua username disimpan huruf kecil
+  const username = String(formData.get('username') ?? '').trim().toLowerCase();
   const pin = String(formData.get('pin') ?? '').trim();
 
   if (!username || !pin) {

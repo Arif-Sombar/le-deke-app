@@ -42,7 +42,11 @@ export default function LoginPage() {
             id="username"
             name="username"
             type="text"
-            placeholder="budi.santoso"
+            placeholder="contoh: boy"
+            autoCapitalize="none"
+            autoCorrect="off"
+            autoComplete="username"
+            spellCheck={false}
             required
             className="rounded-lg"
             style={{ height: 44, border: '1px solid var(--border)', padding: '0 14px', fontSize: 14 }}
