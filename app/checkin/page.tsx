@@ -1,12 +1,15 @@
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { getSesi } from '@/lib/session';
 import CheckinClient from './CheckinClient';
 
 export default async function CheckinPage() {
-  const cookieStore = await cookies();
-  const pegawaiId = cookieStore.get('pegawai_id')?.value;
-  if (!pegawaiId) {
+  const sesi = await getSesi();
+  if (!sesi) {
     redirect('/login');
+  }
+  // Owner tidak perlu check-in
+  if (sesi.peran === 'owner') {
+    redirect('/admin');
   }
   return <CheckinClient />;
 }

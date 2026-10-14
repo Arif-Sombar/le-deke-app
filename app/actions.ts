@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { hitungJarakMeter } from '@/lib/distance';
+import { getSesi } from '@/lib/session';
 
 const STORE_LAT = Number(process.env.STORE_LAT ?? 0);
 const STORE_LNG = Number(process.env.STORE_LNG ?? 0);
@@ -28,7 +29,7 @@ export async function loginAction(
   const supabase = getSupabaseAdmin();
   const { data: pegawai, error } = await supabase
     .from('pegawai')
-    .select('id, nama, pin, status')
+    .select('id, nama, pin, status, peran')
     .eq('username', username)
     .maybeSingle();
 
@@ -58,7 +59,8 @@ export async function loginAction(
     maxAge: 60 * 60 * 12,
   });
 
-  redirect('/checkin');
+  // Owner tidak perlu GPS/foto: langsung ke halaman admin, bisa dari mana saja
+  redirect(pegawai.peran === 'owner' ? '/admin' : '/checkin');
 }
 
 export async function logoutAction() {
@@ -79,6 +81,10 @@ export async function checkinAction(
   const pegawaiId = cookieStore.get('pegawai_id')?.value;
   if (!pegawaiId) {
     redirect('/login');
+  }
+  const sesi = await getSesi();
+  if (sesi?.peran === 'owner') {
+    redirect('/admin');
   }
 
   const latStr = formData.get('lat');
